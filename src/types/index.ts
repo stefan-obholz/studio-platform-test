@@ -39,6 +39,7 @@ export type {
   MixingOrderUpdate,
   MixingStemInsert,
   MixingRevisionInsert,
+  BeatFavorite,
 } from "./database";
 
 /** Standard server action response */
