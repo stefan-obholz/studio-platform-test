@@ -12,6 +12,7 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const shouldPlayRef = useRef(false);
   const {
     currentBeatId,
     isPlaying,
@@ -26,34 +27,31 @@ export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
 
   const isActive = currentBeatId === beatId;
 
+  // Track whether we should be playing (avoids stale closure issues)
+  shouldPlayRef.current = isActive && isPlaying;
+
   // Sync audio element with store state
   useEffect(() => {
     if (!audioRef.current) return;
     const audio = audioRef.current;
 
     if (isActive && isPlaying) {
-      // If the audio has a src and is ready, play immediately.
-      // Otherwise, the canplay handler below will trigger playback.
-      if (audio.readyState >= 2) {
-        audio.play().catch(() => {
-          // Browser autoplay policy blocked — silently ignore
-        });
+      if (audio.src && audio.readyState >= 2) {
+        audio.play().catch(() => {});
       }
-      // If readyState < 2, the `canplay` event handler will start playback
+      // Otherwise canplay handler will trigger playback
     } else {
       audio.pause();
     }
   }, [isActive, isPlaying]);
 
-  // Handle canplay — auto-play when audio is loaded and store says we should be playing
+  // Handle canplay — uses ref to avoid stale closure
   const handleCanPlay = useCallback(() => {
     if (!audioRef.current) return;
-    if (isActive && isPlaying) {
-      audioRef.current.play().catch(() => {
-        // Browser autoplay policy blocked — silently ignore
-      });
+    if (shouldPlayRef.current) {
+      audioRef.current.play().catch(() => {});
     }
-  }, [isActive, isPlaying]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -111,8 +109,8 @@ export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
       {previewUrl && (
         <audio
           ref={audioRef}
-          src={isActive ? previewUrl : undefined}
-          preload="none"
+          src={previewUrl}
+          preload={isActive ? "auto" : "none"}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onCanPlay={handleCanPlay}
