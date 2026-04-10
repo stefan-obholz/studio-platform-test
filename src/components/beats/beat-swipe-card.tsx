@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useAudioStore } from "@/stores/audio-store";
 import type { Beat } from "@/types";
 
 interface BeatSwipeCardProps {
@@ -23,9 +24,13 @@ export function BeatSwipeCard({
   isTop,
   exitDirection,
 }: BeatSwipeCardProps) {
+  const { currentBeatId, currentTime, duration } = useAudioStore();
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
+
+  const isAudioActive = currentBeatId === beat.id;
+  const audioProgress = isAudioActive && duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const SWIPE_THRESHOLD = 100;
 
@@ -159,7 +164,7 @@ export function BeatSwipeCard({
         >
           <div
             className="h-full rounded-sm"
-            style={{ width: "65%", background: "var(--color-brand-gradient)" }}
+            style={{ width: `${audioProgress}%`, background: "var(--color-brand-gradient)", transition: "width 0.1s linear" }}
           />
         </div>
       </div>
