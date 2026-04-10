@@ -1,9 +1,18 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { ActionResponse } from "@/types";
 import type { Beat, BeatPurchase, LicenseType } from "@/types";
 import { createCheckoutSession } from "@/lib/stripe";
+
+/** Service-role client for storage uploads (bypasses RLS) */
+function getStorageAdmin() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 export async function getPublishedBeats(): Promise<ActionResponse<Beat[]>> {
   const supabase = await createClient();
@@ -205,8 +214,8 @@ export async function getBeatDownloadUrl(
     return { success: false, error: "Fichier audio introuvable" };
   }
 
-  // Generate signed URL (15 minutes)
-  const { data: signedUrl, error } = await supabase.storage
+  // Generate signed URL (15 minutes) — use service role for private bucket access
+  const { data: signedUrl, error } = await getStorageAdmin().storage
     .from("beat-files")
     .createSignedUrl(beat.audio_full_url, 900);
 
@@ -404,24 +413,26 @@ export async function createBeatWithFiles(
 
   const basePath = `${user.id}/${beat.id}`;
 
+  const storageAdmin = getStorageAdmin();
+
   try {
-    // Step 2: Upload cover image to beat-previews
+    // Step 2: Upload cover image to beat-previews (using service role to bypass RLS)
     const coverPath = `${basePath}/cover${coverExt}`;
-    const { error: coverErr } = await supabase.storage
+    const { error: coverErr } = await storageAdmin.storage
       .from("beat-previews")
       .upload(coverPath, coverFile, { upsert: true });
     if (coverErr) throw new Error(`Cover upload: ${coverErr.message}`);
 
     // Step 3: Upload full audio to beat-files (private)
     const audioPath = `${basePath}/audio${audioExt}`;
-    const { error: audioErr } = await supabase.storage
+    const { error: audioErr } = await storageAdmin.storage
       .from("beat-files")
       .upload(audioPath, audioFile, { upsert: true });
     if (audioErr) throw new Error(`Audio upload: ${audioErr.message}`);
 
     // Step 4: Upload same audio to beat-previews (public preview)
     const previewPath = `${basePath}/preview${audioExt}`;
-    const { error: previewErr } = await supabase.storage
+    const { error: previewErr } = await storageAdmin.storage
       .from("beat-previews")
       .upload(previewPath, audioFile, { upsert: true });
     if (previewErr) throw new Error(`Preview upload: ${previewErr.message}`);
@@ -455,11 +466,11 @@ export async function createBeatWithFiles(
     // Cleanup on failure: delete beat record and any uploaded files
     try {
       await supabase.from("beats").delete().eq("id", beat.id);
-      await supabase.storage.from("beat-previews").remove([
+      await storageAdmin.storage.from("beat-previews").remove([
         `${basePath}/cover${coverExt}`,
         `${basePath}/preview${audioExt}`,
       ]);
-      await supabase.storage.from("beat-files").remove([`${basePath}/audio${audioExt}`]);
+      await storageAdmin.storage.from("beat-files").remove([`${basePath}/audio${audioExt}`]);
     } catch (cleanupErr) {
       console.error("[createBeatWithFiles] Cleanup failed for beat", beat.id, cleanupErr);
     }
