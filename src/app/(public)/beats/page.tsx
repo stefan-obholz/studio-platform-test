@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Music } from "lucide-react";
-import { getPublishedBeats } from "@/actions/beats";
+import { getPublishedBeats, incrementPlayCount } from "@/actions/beats";
 import { addToFavorites } from "@/actions/favorites";
 import { BeatSwipeCard } from "@/components/beats/beat-swipe-card";
 import { AudioPlayer } from "@/components/beats/audio-player";
 import { BeatsOnboarding } from "@/components/beats/beats-onboarding";
 import { useAudioStore } from "@/stores/audio-store";
-import { MOCK_BEATS } from "@/lib/mock-beats";
 import type { Beat } from "@/types";
 
 export default function BeatsPage() {
@@ -30,8 +29,6 @@ export default function BeatsPage() {
       const result = await getPublishedBeats();
       if (result.success && result.data.length > 0) {
         setBeats(result.data);
-      } else {
-        setBeats(MOCK_BEATS);
       }
       setLoading(false);
     }
@@ -46,6 +43,7 @@ export default function BeatsPage() {
     const beat = beats[currentIndex];
     if (beat.audio_preview_url) {
       play(beat.id, beat.audio_preview_url);
+      incrementPlayCount(beat.id).catch(() => {});
     }
   }, [currentIndex, hasInteracted, beats, play]);
 

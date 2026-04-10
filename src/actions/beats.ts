@@ -366,6 +366,7 @@ export async function createBeatWithFiles(
     tags: string[];
     priceSimple: number;
     priceExclusive: number | null;
+    publishNow?: boolean;
   };
   try {
     metadata = JSON.parse(metadataRaw);
@@ -391,7 +392,7 @@ export async function createBeatWithFiles(
       tags: metadata.tags,
       price_simple: metadata.priceSimple,
       price_exclusive: metadata.priceExclusive,
-      is_published: false,
+      is_published: metadata.publishNow === true,
       is_exclusive_sold: false,
     })
     .select()

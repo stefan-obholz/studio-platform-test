@@ -13,6 +13,7 @@ export const uploadBeatSchema = z.object({
   tags: z.array(z.string()).max(10).optional(),
   priceSimple: z.number().min(1),
   priceExclusive: z.number().min(1).nullable(),
+  publishNow: z.boolean().optional(),
 });
 
 export type PurchaseBeatInput = z.infer<typeof purchaseBeatSchema>;
