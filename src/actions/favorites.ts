@@ -1,7 +1,16 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { ActionResponse, Beat, BeatFavorite } from "@/types";
+
+/** Service-role client for counter updates (bypasses RLS on beats table) */
+function getServiceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 export interface FavoriteWithBeat extends BeatFavorite {
   beat: Beat;
@@ -37,15 +46,15 @@ export async function addToFavorites(
     return { success: false, error: error.message };
   }
 
-  // Increment like_count on the beat
-  const { data: beat } = await supabase
+  // Increment like_count using service role client (bypasses RLS on beats table)
+  const service = getServiceClient();
+  const { data: beat } = await service
     .from("beats")
     .select("like_count")
     .eq("id", beatId)
     .single<{ like_count: number }>();
-
   if (beat) {
-    await supabase
+    await service
       .from("beats")
       .update({ like_count: beat.like_count + 1 })
       .eq("id", beatId);
@@ -70,17 +79,20 @@ export async function removeFromFavorites(
     .eq("user_id", user.id)
     .eq("beat_id", beatId);
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    // If no rows deleted (already removed), don't decrement
+    return { success: false, error: error.message };
+  }
 
-  // Decrement like_count on the beat
-  const { data: beat } = await supabase
+  // Decrement like_count using service role client (bypasses RLS)
+  const service = getServiceClient();
+  const { data: beat } = await service
     .from("beats")
     .select("like_count")
     .eq("id", beatId)
     .single<{ like_count: number }>();
-
   if (beat && beat.like_count > 0) {
-    await supabase
+    await service
       .from("beats")
       .update({ like_count: beat.like_count - 1 })
       .eq("id", beatId);
