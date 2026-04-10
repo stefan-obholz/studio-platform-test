@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getBeatBySlug, purchaseBeat } from "@/actions/beats";
-import { MOCK_BEATS } from "@/lib/mock-beats";
 import { AudioPlayer } from "@/components/beats/audio-player";
 import { LicenseSelector } from "@/components/beats/license-selector";
 import type { Beat } from "@/types";
@@ -27,13 +26,7 @@ export default function BeatDetailPage() {
       if (result.success) {
         setBeat(result.data);
       } else {
-        // Fallback to mock data if beat not found in DB
-        const mockBeat = MOCK_BEATS.find((b) => b.slug === params.slug);
-        if (mockBeat) {
-          setBeat(mockBeat);
-        } else {
-          setError(result.error);
-        }
+        setError(result.error);
       }
       setLoading(false);
     }

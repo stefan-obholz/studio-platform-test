@@ -520,6 +520,25 @@ export type Database = {
         };
         Relationships: [];
       };
+      beat_favorites: {
+        Row: {
+          id: string;
+          user_id: string;
+          beat_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          beat_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          beat_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -562,6 +581,7 @@ export type MixingStem = Database["public"]["Tables"]["mixing_stems"]["Row"];
 export type MixingRevision = Database["public"]["Tables"]["mixing_revisions"]["Row"];
 export type ContentPage = Database["public"]["Tables"]["content_pages"]["Row"];
 export type PlatformSetting = Database["public"]["Tables"]["platform_settings"]["Row"];
+export type BeatFavorite = Database["public"]["Tables"]["beat_favorites"]["Row"];
 
 // Insert types
 export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];

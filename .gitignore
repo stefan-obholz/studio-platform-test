@@ -45,3 +45,6 @@ _bmad-output/
 
 # Vercel
 .vercel
+
+# Supabase CLI temp
+supabase/.temp/

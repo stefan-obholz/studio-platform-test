@@ -30,6 +30,7 @@ export default function BeatUploadPage() {
   const [priceExclusive, setPriceExclusive] = useState(199);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [publishNow, setPublishNow] = useState(false);
   const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -64,6 +65,7 @@ export default function BeatUploadPage() {
           .filter(Boolean),
         priceSimple,
         priceExclusive: priceExclusive > 0 ? priceExclusive : null,
+        publishNow,
       }),
     );
 
@@ -120,7 +122,7 @@ export default function BeatUploadPage() {
         {/* Audio file */}
         <BeatFileUploader
           label="Fichier audio (WAV) *"
-          accept=".wav,.aiff,.flac"
+          accept=".wav,.mp3,.aiff,.flac"
           maxSizeMb={200}
           file={audioFile}
           onFileChange={setAudioFile}
@@ -247,6 +249,27 @@ export default function BeatUploadPage() {
           </div>
         </div>
 
+        {/* Publish / Draft toggle */}
+        <div className="flex items-center justify-between rounded-lg border border-border-subtle bg-bg-elevated px-4 py-3">
+          <div>
+            <p className="text-sm font-medium">Publier immédiatement</p>
+            <p className="text-xs text-text-muted">
+              {publishNow ? "Le beat sera visible sur le marketplace" : "Le beat sera enregistré en brouillon"}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={publishNow}
+            onClick={() => setPublishNow(!publishNow)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${publishNow ? "bg-green-500" : "bg-bg-hover"}`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${publishNow ? "translate-x-5" : "translate-x-0"}`}
+            />
+          </button>
+        </div>
+
         {errors.form && <p className="text-sm text-error">{errors.form}</p>}
 
         {/* Submit */}
@@ -262,7 +285,7 @@ export default function BeatUploadPage() {
             disabled={pending}
             className="flex-1 rounded-lg bg-brand-gradient px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {pending ? "Création..." : "Enregistrer en brouillon"}
+            {pending ? "Création..." : publishNow ? "Publier le beat" : "Enregistrer en brouillon"}
           </button>
         </div>
       </form>

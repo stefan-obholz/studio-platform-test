@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useAudioStore } from "@/stores/audio-store";
 import type { Beat } from "@/types";
 
 interface BeatSwipeCardProps {
@@ -23,9 +24,13 @@ export function BeatSwipeCard({
   isTop,
   exitDirection,
 }: BeatSwipeCardProps) {
+  const { currentBeatId, currentTime, duration } = useAudioStore();
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
+
+  const isAudioActive = currentBeatId === beat.id;
+  const audioProgress = isAudioActive && duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const SWIPE_THRESHOLD = 100;
 
@@ -102,12 +107,25 @@ export function BeatSwipeCard({
               : "none",
         }}
       >
-        {/* Dark gradient background */}
+        {/* Cover image background (if available) */}
+        {beat.cover_image_url && (
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${beat.cover_image_url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: 0.35,
+            }}
+          />
+        )}
+        {/* Dark gradient overlay */}
         <div
           className="absolute inset-0"
           style={{
-            background:
-              "linear-gradient(135deg, #1a0a2e 0%, #4a1a8a 30%, rgba(217,70,239,0.13) 70%, #1a0a2e 100%)",
+            background: beat.cover_image_url
+              ? "linear-gradient(135deg, rgba(26,10,46,0.85) 0%, rgba(74,26,138,0.7) 30%, rgba(217,70,239,0.2) 70%, rgba(26,10,46,0.9) 100%)"
+              : "linear-gradient(135deg, #1a0a2e 0%, #4a1a8a 30%, rgba(217,70,239,0.13) 70%, #1a0a2e 100%)",
           }}
         />
 
@@ -159,7 +177,7 @@ export function BeatSwipeCard({
         >
           <div
             className="h-full rounded-sm"
-            style={{ width: "65%", background: "var(--color-brand-gradient)" }}
+            style={{ width: `${audioProgress}%`, background: "var(--color-brand-gradient)", transition: "width 0.1s linear" }}
           />
         </div>
       </div>

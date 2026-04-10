@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { Play, Pause, Volume2 } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { useAudioStore } from "@/stores/audio-store";
 
 interface AudioPlayerProps {
@@ -12,6 +12,7 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const shouldPlayRef = useRef(false);
   const {
     currentBeatId,
     isPlaying,
@@ -26,16 +27,31 @@ export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
 
   const isActive = currentBeatId === beatId;
 
+  // Track whether we should be playing (avoids stale closure issues)
+  shouldPlayRef.current = isActive && isPlaying;
+
+  // Sync audio element with store state
   useEffect(() => {
     if (!audioRef.current) return;
     const audio = audioRef.current;
 
     if (isActive && isPlaying) {
-      audio.play().catch(() => {});
+      if (audio.src && audio.readyState >= 2) {
+        audio.play().catch(() => {});
+      }
+      // Otherwise canplay handler will trigger playback
     } else {
       audio.pause();
     }
   }, [isActive, isPlaying]);
+
+  // Handle canplay — uses ref to avoid stale closure
+  const handleCanPlay = useCallback(() => {
+    if (!audioRef.current) return;
+    if (shouldPlayRef.current) {
+      audioRef.current.play().catch(() => {});
+    }
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -93,10 +109,11 @@ export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
       {previewUrl && (
         <audio
           ref={audioRef}
-          src={isActive ? previewUrl : undefined}
-          preload="none"
+          src={previewUrl}
+          preload={isActive ? "auto" : "none"}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onCanPlay={handleCanPlay}
           onEnded={() => pause()}
         />
       )}

@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Artist {
   name: string;
-  photo: string;
+  photo: string | null;
 }
 
 export function ArtistCarousel({ artists }: { artists: Artist[] }) {
@@ -57,7 +57,7 @@ export function ArtistCarousel({ artists }: { artists: Artist[] }) {
             <div className="artist-avatar">
               <img
                 className="artist-photo"
-                src={artist.photo}
+                src={artist.photo ?? undefined}
                 alt={artist.name}
               />
             </div>
