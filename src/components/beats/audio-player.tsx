@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { Play, Pause, Volume2 } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { useAudioStore } from "@/stores/audio-store";
 
 interface AudioPlayerProps {
@@ -26,14 +26,32 @@ export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
 
   const isActive = currentBeatId === beatId;
 
+  // Sync audio element with store state
   useEffect(() => {
     if (!audioRef.current) return;
     const audio = audioRef.current;
 
     if (isActive && isPlaying) {
-      audio.play().catch(() => {});
+      // If the audio has a src and is ready, play immediately.
+      // Otherwise, the canplay handler below will trigger playback.
+      if (audio.readyState >= 2) {
+        audio.play().catch(() => {
+          // Browser autoplay policy blocked — silently ignore
+        });
+      }
+      // If readyState < 2, the `canplay` event handler will start playback
     } else {
       audio.pause();
+    }
+  }, [isActive, isPlaying]);
+
+  // Handle canplay — auto-play when audio is loaded and store says we should be playing
+  const handleCanPlay = useCallback(() => {
+    if (!audioRef.current) return;
+    if (isActive && isPlaying) {
+      audioRef.current.play().catch(() => {
+        // Browser autoplay policy blocked — silently ignore
+      });
     }
   }, [isActive, isPlaying]);
 
@@ -97,6 +115,7 @@ export function AudioPlayer({ beatId, previewUrl, compact }: AudioPlayerProps) {
           preload="none"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onCanPlay={handleCanPlay}
           onEnded={() => pause()}
         />
       )}
